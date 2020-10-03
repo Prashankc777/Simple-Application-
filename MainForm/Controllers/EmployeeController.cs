@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DataAccessLayers.Interface;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Modals.Models;
 
 namespace MainForm.Controllers
@@ -12,10 +14,12 @@ namespace MainForm.Controllers
     public class EmployeeController : Controller
     {
         private readonly IEmployeeRepository _employeeRepository;
+     
 
         public EmployeeController(IEmployeeRepository employeeRepository)
         {
             _employeeRepository = employeeRepository;
+          
         }
        
         public IActionResult Index()
@@ -26,7 +30,9 @@ namespace MainForm.Controllers
         [HttpGet]
         public ViewResult Edit(int id)
         {
-            return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id)) : View(); }
+            return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id)) : View();
+
+        }
 
 
         [HttpPost]
@@ -52,5 +58,20 @@ namespace MainForm.Controllers
             return RedirectToAction("Index");
 
         }
+        [HttpGet]
+        public IActionResult Delete(int? id)
+        {
+            return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id.Value)) : View();
+        }
+
+        [HttpPost]
+        public IActionResult Delete(int id)
+        {
+            if (!ModelState.IsValid) return View();
+            var emp = _employeeRepository.Delete(id);
+            return RedirectToAction("Index");
+        }
+
+
     }
 }

@@ -51,7 +51,14 @@ namespace DataAccessLayers.Class
 
         public Employee Delete(int id)
         {
-            throw new NotImplementedException();
+            var emp = GetAllEmpoloyee().FirstOrDefault(q => q.Id == id);
+            if (emp is null) return emp;
+            var Param = new DynamicParameters();
+            Param.Add("@Id", id);
+            ORm.Dapper.ExceptionWithoutReturn("[EMPLOYEE_DELETE]",param:Param);
+            return emp;
+
+
         }
     }
 }
