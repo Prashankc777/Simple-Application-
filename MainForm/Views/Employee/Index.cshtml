@@ -1,0 +1,41 @@
+﻿@model IEnumerable<Modals.Models.Employee>
+<h1> List of Employee</h1>
+
+<a asp-controller="Employee" asp-action="Create"  class="btn btn-primary">Create</a>
+<div class="container">
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Gender</th>
+            <th>Address</th>
+        </tr>
+        </thead>
+        
+        <tbody>
+
+            @if (Model.Any())
+            {
+                @foreach (var item in Model.Select((x, i) => new { Data = x, Index = i+1  }))
+                {
+                    <tr>
+                        <td>@item.Index</td>
+                        <td>@item.Data.FirstName</td>
+                        <td>@item.Data.LastName</td>
+                        <td>@item.Data.Gender</td>
+                        <td>@item.Data.Address</td>
+                        <td> <a asp-controller="Employee" asp-action="Edit" asp-route-id = "@item.Data.Id" class="btn btn-primary">Edit</a> </td>
+                    </tr>
+                }
+            }
+
+        </tbody>
+
+
+    </table>
+
+
+</div>
