@@ -10,6 +10,7 @@
             <th>#</th>
             <th>First Name</th>
             <th>Last Name</th>
+            <th>Email</th>
             <th>Gender</th>
             <th>Address</th>
         </tr>
@@ -25,6 +26,7 @@
                         <td>@item.Index</td>
                         <td>@item.Data.FirstName</td>
                         <td>@item.Data.LastName</td>
+                        <td>@item.Data.Email</td>
                         <td>@item.Data.Gender</td>
                         <td>@item.Data.Address</td>
                         <td> <a asp-controller="Employee" asp-action="Edit" asp-route-id = "@item.Data.Id" class="btn btn-primary">Edit</a> </td>

@@ -34,6 +34,7 @@ namespace DataAccessLayers.Class
             Param.Add("@LastName", employeeChanges.LastName);
             Param.Add("@Gender", employeeChanges.Gender);
             Param.Add("@Address", employeeChanges.Address);
+            Param.Add("@Email", employeeChanges.Email);
             DataAccessLayers.ORm.Dapper.ExceptionWithoutReturn("EMPLOYEE_EDIT", param: Param);
             return emp;
         }
@@ -42,9 +43,10 @@ namespace DataAccessLayers.Class
         {
             var Param = new DynamicParameters();
             Param.Add("@FirstName", Employee.FirstName);
-            Param.Add("@LastName", Employee.FirstName);
-            Param.Add("@Gender", Employee.FirstName);
-            Param.Add("@Adress", Employee.FirstName);
+            Param.Add("@LastName", Employee.LastName);
+            Param.Add("@Gender", Employee.Gender);
+            Param.Add("@Adress", Employee.Address);
+            Param.Add("@EMAIL", Employee.Email);
             ORm.Dapper.ExceptionWithoutReturn("[EMPLOYEE_CREATE]",param:Param);
             return Employee;
         }
@@ -55,7 +57,7 @@ namespace DataAccessLayers.Class
             if (emp is null) return emp;
             var Param = new DynamicParameters();
             Param.Add("@Id", id);
-            ORm.Dapper.ExceptionWithoutReturn("[EMPLOYEE_DELETE]",param:Param);
+            ORm.Dapper.ExceptionWithoutReturn("EMPLOYEE_DELETE",param:Param);
             return emp;
 
 
