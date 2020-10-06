@@ -37,10 +37,8 @@ namespace DataAccessLayers.ORm
 			return (T) Convert.ChangeType(SqlCon.ExecuteScalar(procedureName, param, commandType: CommandType.StoredProcedure), typeof(T));
 		}
 
-	  
-		
-	
-		  public static IEnumerable<T> ReturnList<T>(string procedureName, DynamicParameters param = null)
+
+        public static IEnumerable<T> ReturnList<T>(string procedureName, DynamicParameters param = null)
 		  {
 			using var SqlCon = new SqlConnection(connectionString: ConnectionString);
 			if (SqlCon.State != ConnectionState.Open)

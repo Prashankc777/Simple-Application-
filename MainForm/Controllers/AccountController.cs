@@ -2,20 +2,25 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Modals.ViewModels;
 
 namespace MainForm.Controllers
 {
+    [AllowAnonymous]
     public class AccountController : Controller
     {
-        public readonly SignInManager<IdentityUser> SignInManager;
+       
+       
+        private readonly SignInManager<IdentityUser> _signInManager;
         public readonly UserManager<IdentityUser> UserManager;
 
-        public AccountController(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+        public AccountController(SignInManager<IdentityUser> SignInManager, UserManager<IdentityUser> userManager)
         {
-           SignInManager = signInManager;
+          
+            _signInManager = SignInManager;
             UserManager = userManager;
         }
 
@@ -33,14 +38,15 @@ namespace MainForm.Controllers
             var result = await UserManager.CreateAsync(user, register.Password);
             if (result.Succeeded)
             {
-                if (SignInManager.IsSignedIn(User))
+                if (_signInManager.IsSignedIn(User))
                 {
                     return RedirectToAction("Index", "Employee");
                 }
 
-                await SignInManager.SignInAsync(user, isPersistent: false);
-                return RedirectToAction("Index", "Employee");
+               
             }
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return RedirectToAction("Index", "Employee");
 
             foreach (var VARIABLE in result.Errors)
             {
@@ -48,6 +54,42 @@ namespace MainForm.Controllers
             }
 
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("index", "home");
+        }
+
+        [HttpGet]
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl)
+        {
+            if (!ModelState.IsValid) return View(model);
+            var result = await _signInManager.PasswordSignInAsync(
+                model.Email, model.Password, model.RememberMe, false);
+
+            if (result.Succeeded)
+            {
+                if ((!string.IsNullOrEmpty(returnUrl)))
+                {
+                    return RedirectToAction(returnUrl);
+
+                }
+
+                return RedirectToAction("index", "home");
+            }
+
+            ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+
+            return View(model);
         }
     }
 }

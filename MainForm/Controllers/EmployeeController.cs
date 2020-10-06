@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using DataAccessLayers.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -11,31 +12,37 @@ using Modals.Models;
 
 namespace MainForm.Controllers
 {
+    
     public class EmployeeController : Controller
     {
         private readonly IEmployeeRepository _employeeRepository;
      
-
+       
         public EmployeeController(IEmployeeRepository employeeRepository)
         {
             _employeeRepository = employeeRepository;
           
         }
-       
+
+        [AllowAnonymous]
+
         public IActionResult Index()
         {
             return View(_employeeRepository.GetAllEmpoloyee());
         }
 
         [HttpGet]
+        [Authorize]
         public ViewResult Edit(int id)
         {
             return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id)) : View();
 
         }
+       
 
 
         [HttpPost]
+        [Authorize]
         public IActionResult Edit(Employee employeeChanges)
         {
             if (!ModelState.IsValid) return View();
@@ -45,12 +52,14 @@ namespace MainForm.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
+        [Authorize]
         public IActionResult Create(Employee Employee)
         {
             if (!ModelState.IsValid) return View();
