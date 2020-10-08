@@ -1,6 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Identity;
 
-@inject SignInManager<IdentityUser> signInManager
+@inject SignInManager<ApplicationUser> signInManager;
 
 <!DOCTYPE html>
 <html>
@@ -42,14 +42,31 @@
                     <li><a asp-area="" asp-controller="Home" asp-action="About">About</a></li>
                     <li><a asp-area="" asp-controller="Home" asp-action="Contact">Contact</a></li>
                     <li><a asp-area="" asp-controller="Employee" asp-action="Index">Employee</a></li>
-                   
-                    
-                    
+                    <li><a asp-area="" asp-controller="Adminstration" asp-action="CreateRole">Create Role</a></li>
+                    @if (signInManager.IsSignedIn(User) && User.IsInRole("Administration"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Manage
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                <a class="dropdown-item" asp-controller="Adminstration"
+                                   asp-action="ListUsers">Users</a>
+                                <a class="dropdown-item" asp-controller="Adminstration"
+                                   asp-action="ListRoles">Roles</a>
+                            </div>
+                        </li>
+                    }
+
+                </ul>
+
+                <ul class="navbar-nav ml-auto">
                     @if (signInManager.IsSignedIn(User))
                     {
                         <li class="nav-item">
                             <form method="post" asp-action="Logout" asp-controller="Account">
-                                
+
                                 <button style="width: auto" type="submit" class="nav-link btn btn-link py-0">
                                     Logout @User.Identity.Name
                                 </button>
@@ -63,25 +80,23 @@
                             <a asp-area="" asp-controller="Account" asp-action="Register">Register</a>
                         </li>
                         <li class="nav-item">
-                         <a asp-controller="Account" asp-action="Login">Login</a>
+                            <a asp-controller="Account" asp-action="Login">Login</a>
                         </li>
 
                     }
-                    
-
                 </ul>
-              
+
             </div>
         </div>
     </nav>
 
-    
+
 
     <div class="container body-content">
         @RenderBody()
         <hr />
         <footer>
-            <p>&copy; 2020 - MainForm</p>
+            <p>&copy; 2020 - Prashan Raj KC</p>
         </footer>
     </div>
 

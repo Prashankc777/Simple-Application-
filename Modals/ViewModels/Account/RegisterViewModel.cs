@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Modals.CustomValidation;
+using Modals.Models;
+
 
 namespace Modals.ViewModels
 {
@@ -9,6 +15,8 @@ namespace Modals.ViewModels
     {
         [Required]
         [EmailAddress]
+        [Remote(action: "IsEmailInUse", controller: "Account")]
+        [ValidEmailDomain(allowedDomain: "kc.com", ErrorMessage ="Email Domain must be kc.com")]
         public string Email { get; set; }
 
         [Required]
@@ -19,7 +27,11 @@ namespace Modals.ViewModels
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "Password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
+
+        public string City { get; set; }
     }
+
+    
 }
 
 

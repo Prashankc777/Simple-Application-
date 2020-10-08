@@ -38,7 +38,7 @@ namespace DataAccessLayers.ORm
 		}
 
 
-        public static IEnumerable<T> ReturnList<T>(string procedureName, DynamicParameters param = null)
+		public static IEnumerable<T> ReturnList<T>(string procedureName, DynamicParameters param = null)
 		  {
 			using var SqlCon = new SqlConnection(connectionString: ConnectionString);
 			if (SqlCon.State != ConnectionState.Open)

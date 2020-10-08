@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Threading.Tasks;
+using MainForm.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,17 +14,18 @@ namespace MainForm.Controllers
     [AllowAnonymous]
     public class AccountController : Controller
     {
-       
-       
-        private readonly SignInManager<IdentityUser> _signInManager;
-        public readonly UserManager<IdentityUser> UserManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        public readonly UserManager<ApplicationUser> UserManager;
 
-        public AccountController(SignInManager<IdentityUser> SignInManager, UserManager<IdentityUser> userManager)
+        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
         {
-          
-            _signInManager = SignInManager;
+
+            _signInManager = signInManager;
             UserManager = userManager;
         }
+
+
+        
 
         [HttpGet]
         public IActionResult Register()
@@ -30,37 +33,60 @@ namespace MainForm.Controllers
             return View();
         }
 
+        public async Task<IActionResult> IsEmailInUse(string Email)
+        {
+            var EmailUser = await UserManager.FindByEmailAsync(Email);
+            if (EmailUser is null)
+            {
+                return Json(true);
+            }
+            else
+            {
+                return Json($"Email {Email} is already in use ");
+            }
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel register)
         {
             if (!ModelState.IsValid) return View();
-            var user = new IdentityUser( userName: register.Email);
+            var user = new ApplicationUser()
+            {
+                UserName = register.Email,
+                Email = register.Email,
+                City = register.City
+            };
             var result = await UserManager.CreateAsync(user, register.Password);
             if (result.Succeeded)
             {
-                if (_signInManager.IsSignedIn(User))
+                if (_signInManager.IsSignedIn(User) && User.IsInRole("Administration"))
                 {
-                    return RedirectToAction("Index", "Employee");
+                    return RedirectToAction("ListUsers", "Adminstration");
                 }
 
-               
-            }
-            await _signInManager.SignInAsync(user, isPersistent: false);
-            return RedirectToAction("Index", "Employee");
 
-            foreach (var VARIABLE in result.Errors)
+                return RedirectToAction("Login", "Account");
+            }
+            foreach (var error in result.Errors)
             {
-                ModelState.AddModelError("",VARIABLE.Description);
+                ModelState.AddModelError(String.Empty, error.Description);
             }
 
             return View();
-        }
 
-        [HttpPost]
+        }
+       
+
+
+
+
+
+    [HttpPost]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction("index", "home");
+            return RedirectToAction("Login", "Account");
         }
 
         [HttpGet]
@@ -84,12 +110,19 @@ namespace MainForm.Controllers
 
                 }
 
-                return RedirectToAction("index", "home");
+                return RedirectToAction("index", "Employee");
             }
 
             ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
 
             return View(model);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
     }
 }
