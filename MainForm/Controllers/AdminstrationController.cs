@@ -32,7 +32,65 @@ namespace MainForm.Controllers
             var users = _userManager.Users;
             return View(users);
         }
-        
+        [HttpPost]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user is null)
+            {
+                ViewBag.ErrorMessage = $"User with id {id} cannot be found";
+                return View("NotFound");
+            }
+            else
+            {
+                 var result = await _userManager.DeleteAsync(user);
+
+                 if (result.Succeeded)
+                 {
+                     return RedirectToAction("ListUsers");
+                 }
+
+                 foreach (var error in result.Errors)
+                 {
+                     ModelState.AddModelError(string.Empty, error.Description);
+                 }
+
+                 return View("ListUsers");
+
+            }
+
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteRole(string id)
+        {
+            var role = await _roleManager.FindByIdAsync(id);
+            if (role is null)
+            {
+                ViewBag.ErrorMessage = $"Role with id {id} cannot be found";
+                return View("NotFound");
+            }
+            else
+            {
+                var result = await _roleManager.DeleteAsync(role);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("ListRoles");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View("ListRoles");
+
+            }
+
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> EditUser(string Id)
         {
