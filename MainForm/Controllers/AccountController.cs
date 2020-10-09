@@ -113,7 +113,7 @@ namespace MainForm.Controllers
                 return RedirectToAction("index", "Employee");
             }
 
-            ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+            ModelState.AddModelError(string.Empty, "Email or password Incorrect");
 
             return View(model);
         }
