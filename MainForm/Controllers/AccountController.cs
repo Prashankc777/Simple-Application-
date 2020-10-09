@@ -19,7 +19,6 @@ namespace MainForm.Controllers
 
         public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
         {
-
             _signInManager = signInManager;
             UserManager = userManager;
         }

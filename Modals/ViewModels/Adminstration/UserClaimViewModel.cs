@@ -15,6 +15,6 @@ namespace Modals.ViewModels
 
         public string UserId { get; set; }
         public List<UserClaim> Claims { get; set; }
-
+      
     }
 }

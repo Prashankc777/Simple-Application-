@@ -16,8 +16,8 @@ using Modals.ViewModels.Adminstration;
 namespace MainForm.Controllers
 {
     
-    //[Authorize(Roles = "Administration")]
-    [AllowAnonymous]
+    //[Authorize(Roles = "admin")]
+   [AllowAnonymous]
     public class AdminstrationController : Controller
     {
 
@@ -173,6 +173,7 @@ namespace MainForm.Controllers
         #region -------------- ROLES --------------
 
         [HttpPost]
+        [Authorize(Policy = "DeleteRolePolicy")]
         public async Task<IActionResult> DeleteRole(string id)
         {
             var role = await _roleManager.FindByIdAsync(id);
@@ -237,6 +238,7 @@ namespace MainForm.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> EditRole(string id)
         {
             var role = await _roleManager.FindByIdAsync(id);
@@ -265,6 +267,7 @@ namespace MainForm.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> EditRole(EditRoleViewModel model)
         {
             var role = await _roleManager.FindByIdAsync(model.Id);

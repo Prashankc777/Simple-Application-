@@ -47,6 +47,13 @@ namespace MainForm
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
 
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("DeleteRolePolicy", policy=>policy.RequireClaim("Delete Role"));
+                options.AddPolicy("EditRolePolicy", policy=>policy.RequireClaim("Edit Role"));
+
+            });
+
             
 
             services.AddMvc(options =>
