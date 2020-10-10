@@ -12,6 +12,7 @@ using Modals.Models;
 
 namespace MainForm.Controllers
 {
+    [Authorize]
     
     public class EmployeeController : Controller
     {
@@ -24,7 +25,7 @@ namespace MainForm.Controllers
           
         }
 
-        [AllowAnonymous]
+       
 
         public IActionResult Index()
         {

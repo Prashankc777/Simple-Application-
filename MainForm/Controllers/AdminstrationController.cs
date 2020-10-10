@@ -16,8 +16,8 @@ using Modals.ViewModels.Adminstration;
 namespace MainForm.Controllers
 {
     
-    //[Authorize(Roles = "admin")]
-   [AllowAnonymous]
+    [Authorize (Policy = "AdminRolePolicy")]
+   
     public class AdminstrationController : Controller
     {
 
@@ -75,6 +75,7 @@ namespace MainForm.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> EditUser(string Id)
         {
             var user = await _userManager.FindByIdAsync(Id);
@@ -93,7 +94,7 @@ namespace MainForm.Controllers
                 Email = user.Email,
                 UserName = user.UserName,
                 City = user.City,
-                Claims = userclaims.Select(c => c.Value).ToList(),
+                Claims = userclaims.Select(c => c.Type + ": " +  c.Value).ToList(),
                 Roles = userRoles
             };
 
@@ -102,6 +103,7 @@ namespace MainForm.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "EditRolePolicy")]
         public async Task<IActionResult> ManageUserRoles(string UserId)
         {
             ViewBag.UserId = UserId;
@@ -232,13 +234,14 @@ namespace MainForm.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult ListRoles()
         {
             return View(_roleManager.Roles);
         }
 
         [HttpGet]
-        [Authorize(Policy = "EditRolePolicy")]
+       
         public async Task<IActionResult> EditRole(string id)
         {
             var role = await _roleManager.FindByIdAsync(id);
@@ -267,7 +270,7 @@ namespace MainForm.Controllers
         }
 
         [HttpPost]
-        [Authorize(Policy = "EditRolePolicy")]
+       
         public async Task<IActionResult> EditRole(EditRoleViewModel model)
         {
             var role = await _roleManager.FindByIdAsync(model.Id);
@@ -399,7 +402,7 @@ namespace MainForm.Controllers
                     ClaimType = claim.Type
                 };
 
-                if (existingUserClaims.Any(c=>c.Type == claim.Type))
+                if (existingUserClaims.Any(c=>c.Type == claim.Type && c.Value is "true"))
                 {
                     userclaim.IsSelected = true;
                 }
@@ -415,7 +418,7 @@ namespace MainForm.Controllers
         {
             var user = await _userManager.FindByIdAsync(model.UserId);
 
-            if (user == null)
+            if (user is null)
             {
                 ViewBag.ErrorMessage = $"User with Id = {model.UserId} cannot be found";
                 return View("NotFound");
@@ -433,7 +436,7 @@ namespace MainForm.Controllers
 
             // Add all the claims that are selected on the UI
             result = await _userManager.AddClaimsAsync(user,
-                model.Claims.Where(c => c.IsSelected).Select(c => new Claim(c.ClaimType, c.ClaimType)));
+                model.Claims.Select(c => new Claim(c.ClaimType, c.IsSelected ? "true" : "false")));
 
             if (!result.Succeeded)
             {

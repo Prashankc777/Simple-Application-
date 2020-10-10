@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Modals.Models;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
 namespace MainForm
@@ -50,7 +51,11 @@ namespace MainForm
             services.AddAuthorization(options =>
             {
                 options.AddPolicy("DeleteRolePolicy", policy=>policy.RequireClaim("Delete Role"));
-                options.AddPolicy("EditRolePolicy", policy=>policy.RequireClaim("Edit Role"));
+                options.AddPolicy("EditRolePolicy", policy => policy.RequireAssertion(context =>
+                    context.User.IsInRole("admin") &&
+                    context.User.HasClaim(claim => claim.Type is "Edit Role" && claim.Value is "true") ||
+                    context.User.IsInRole("SuperAdmin")));
+                options.AddPolicy("AdminRolePolicy", policy => policy.RequireRole("Admin"));
 
             });
 
@@ -63,7 +68,28 @@ namespace MainForm
 
             }).SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.AccessDeniedPath = new PathString("/Adminstration/AccessDenied");
+
+            });
+
+
+            services.AddAuthentication()
+                .AddGoogle(options =>
+                {
+                    options.ClientId = "883309166444-kef7vbouheaba0coivl9tklp2lj559ep.apps.googleusercontent.com";
+                    options.ClientSecret = "XKtI2P2WyXXG8Dx47iHA70eg";
+                })
+                .AddFacebook(options =>
+                {
+                    options.AppId = "753472335525117";
+                    options.AppSecret = "11880a4dc58380405f0b4804bc2df7bf";
+                });
+                
+
             services.AddSingleton<IEmployeeRepository, EmployeeRepository>();
+          
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -91,7 +117,7 @@ namespace MainForm
             {
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller=Account}/{action=Login}/{id?}");
+                    template: "{controller=Employee}/{action=Index}/{id?}");
             });
         }
     }

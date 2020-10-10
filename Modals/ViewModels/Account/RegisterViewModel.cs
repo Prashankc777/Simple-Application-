@@ -16,7 +16,7 @@ namespace Modals.ViewModels
         [Required]
         [EmailAddress]
         [Remote(action: "IsEmailInUse", controller: "Account")]
-        [ValidEmailDomain(allowedDomain: "kc.com", ErrorMessage ="Email Domain must be kc.com")]
+        [ValidEmailDomain(allowedDomain: "gmail.com", ErrorMessage ="Email Domain must be gmail.com")]
         public string Email { get; set; }
 
         [Required]
