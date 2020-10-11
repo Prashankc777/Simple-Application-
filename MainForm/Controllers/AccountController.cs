@@ -8,6 +8,7 @@ using MainForm.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Modals.ViewModels;
 
 namespace MainForm.Controllers
@@ -17,15 +18,17 @@ namespace MainForm.Controllers
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         public readonly UserManager<ApplicationUser> UserManager;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<AccountController> logger)
         {
-            _signInManager = signInManager;
-            UserManager = userManager;
+            this._signInManager = signInManager;
+            this.UserManager = userManager;
+            this._logger = logger;
         }
 
 
-        
+
 
         [HttpGet]
         public IActionResult Register()
@@ -60,14 +63,28 @@ namespace MainForm.Controllers
             var result = await UserManager.CreateAsync(user, register.Password);
             if (result.Succeeded)
             {
+
+                var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+                var confirmationLink = Url.Action("ConfirmEmail", "Account", new {userId = user.Id, token = token},
+                    Request.Scheme);
+                
+                _logger.Log(LogLevel.Warning, confirmationLink);
+
+
                 if (_signInManager.IsSignedIn(User) && User.IsInRole("Administration"))
                 {
                     return RedirectToAction("ListUsers", "Adminstration");
                 }
 
+                ViewBag.ErrorTitle = "Registration Sucessful";
+                ViewBag.ErrorMessage =
+                    "Before you can login, please confoirm you email by clicking on the confirmation link we have mailed you";
 
-                return RedirectToAction("Login", "Account");
+                return View("Error");
+
+
             }
+
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(String.Empty, error.Description);
@@ -76,13 +93,38 @@ namespace MainForm.Controllers
             return View();
 
         }
-       
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
+        {
+            if (userId is null || token is null)
+            {
+                return RedirectToAction("index", "Home");
+            }
 
 
+            var user = await UserManager.FindByIdAsync(userId);
 
+            if (user is null)
+            {
+                ViewBag.ErrorMessage = $"User with {userId} is invalid";
+                return View("NotFound");
+                
+            }
 
+            var result = await UserManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                return View();
+            }
 
-    [HttpPost]
+            ViewBag.ErrorTitle = "Email cannot be confirmed";
+            return View("Error");
+
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
@@ -96,7 +138,7 @@ namespace MainForm.Controllers
             LoginViewModel model = new LoginViewModel
             {
                 ReturnUrl = returnUrl,
-                ExternalLogins = 
+                ExternalLogins =
                     (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
             };
 
@@ -107,13 +149,12 @@ namespace MainForm.Controllers
         [HttpPost]
         public IActionResult ExternalLogin(string provider, string returnUrl)
         {
-            var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { ReturnUrl = returnUrl });
+            var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new {ReturnUrl = returnUrl});
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return new ChallengeResult(provider, properties);
         }
 
 
-        [AllowAnonymous]
         public async Task<IActionResult>
             ExternalLoginCallback(string returnUrl = null, string remoteError = null)
         {
@@ -122,28 +163,44 @@ namespace MainForm.Controllers
             LoginViewModel loginViewModel = new LoginViewModel
             {
                 ReturnUrl = returnUrl,
-                ExternalLogins =  (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
+                ExternalLogins =
+                (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList()
             };
 
             if (remoteError != null)
             {
-                ModelState
-                    .AddModelError(string.Empty, $"Error from external provider: {remoteError}");
+                ModelState.AddModelError(string.Empty,
+                    $"Error from external provider: {remoteError}");
 
                 return View("Login", loginViewModel);
             }
 
-            // Get the login information about the user from the external login provider
             var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info is null)
+            if (info == null)
             {
-                ModelState
-                    .AddModelError(string.Empty, "Error loading external login information.");
+                ModelState.AddModelError(string.Empty,
+                    "Error loading external login information.");
 
                 return View("Login", loginViewModel);
             }
 
-         
+            // Get the email claim from external login provider (Google, Facebook etc)
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            ApplicationUser user = null;
+
+            if (email != null)
+            {
+                // Find the user
+                user = await UserManager.FindByEmailAsync(email);
+
+                // If email is not confirmed, display login view with validation error
+                if (user != null && !user.EmailConfirmed)
+                {
+                    ModelState.AddModelError(string.Empty, "Email not confirmed yet");
+                    return View("Login", loginViewModel);
+                }
+            }
+
             var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider,
                 info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
 
@@ -151,19 +208,11 @@ namespace MainForm.Controllers
             {
                 return LocalRedirect(returnUrl);
             }
-            // If there is no record in AspNetUserLogins table, the user may not have
-            // a local account
             else
             {
-                // Get the email claim value
-                var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-
                 if (email != null)
                 {
-                    // Create a new user without password if we do not have a user already
-                    var user = await UserManager.FindByEmailAsync(email);
-
-                    if (user is null)
+                    if (user == null)
                     {
                         user = new ApplicationUser
                         {
@@ -174,14 +223,12 @@ namespace MainForm.Controllers
                         await UserManager.CreateAsync(user);
                     }
 
-                    // Add a login (i.e insert a row for the user in AspNetUserLogins table)
                     await UserManager.AddLoginAsync(user, info);
                     await _signInManager.SignInAsync(user, isPersistent: false);
 
                     return LocalRedirect(returnUrl);
                 }
 
-                // If we cannot find the user email we cannot continue
                 ViewBag.ErrorTitle = $"Email claim not received from: {info.LoginProvider}";
                 ViewBag.ErrorMessage = "Please contact support on Pragim@PragimTech.com";
 
@@ -195,7 +242,17 @@ namespace MainForm.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model, string returnUrl)
         {
+            model.ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
             if (!ModelState.IsValid) return View(model);
+            var user = await UserManager.FindByEmailAsync(model.Email);
+
+            if (user != null && !user.EmailConfirmed &&
+                (await UserManager.CheckPasswordAsync(user, model.Password)))
+            {
+                ModelState.AddModelError(string.Empty, "Email not confirmed yet");
+                return View(model);
+            }
             var result = await _signInManager.PasswordSignInAsync(
                 model.Email, model.Password, model.RememberMe, false);
 
@@ -211,7 +268,6 @@ namespace MainForm.Controllers
             }
 
             ModelState.AddModelError(string.Empty, "Email or password Incorrect");
-
             return View(model);
         }
 
@@ -221,5 +277,6 @@ namespace MainForm.Controllers
         {
             return View();
         }
+
     }
 }
