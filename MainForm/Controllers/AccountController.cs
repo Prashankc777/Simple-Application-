@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Modals.ViewModels;
+using Modals.ViewModels.Account;
+using Modals.ViewModels.Adminstration;
 
 namespace MainForm.Controllers
 {
@@ -25,9 +27,7 @@ namespace MainForm.Controllers
             this._signInManager = signInManager;
             this.UserManager = userManager;
             this._logger = logger;
-        }
-
-
+        } 
 
 
         [HttpGet]
@@ -48,6 +48,49 @@ namespace MainForm.Controllers
                 return Json($"Email {Email} is already in use ");
             }
         }
+
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePasswordViewModel()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangePasswordViewModel(ChangePasswordViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await UserManager.GetUserAsync(User); // user online cha vane user ko info aaucha 
+                if (user is null)
+                {
+                    return RedirectToAction("Login");
+                }
+
+                // ChangePasswordAsync changes the user password
+                var result = await UserManager.ChangePasswordAsync(user,
+                    model.CurrentPassword, model.NewPassword);
+
+                // The new password did not meet the complexity rules or
+                // the current password is incorrect. Add these errors to
+                // the ModelState and rerender ChangePassword view
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    return View();
+                }
+
+                // Upon successfully changing the password refresh sign-in cookie
+                await _signInManager.RefreshSignInAsync(user);
+                return View("ChangePasswordConfirmationView");
+            }
+
+            return View(model);
+        }
+
 
 
         [HttpPost]
@@ -76,9 +119,9 @@ namespace MainForm.Controllers
                     return RedirectToAction("ListUsers", "Adminstration");
                 }
 
-                ViewBag.ErrorTitle = "Registration Sucessful";
+                ViewBag.ErrorTitle = "Registration Successful";
                 ViewBag.ErrorMessage =
-                    "Before you can login, please confoirm you email by clicking on the confirmation link we have mailed you";
+                    @"Before you can login, please  you email by clicking on the confirmation link we have mailed you";
 
                 return View("Error");
 
@@ -150,13 +193,13 @@ namespace MainForm.Controllers
         public IActionResult ExternalLogin(string provider, string returnUrl)
         {
             var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new {ReturnUrl = returnUrl});
-            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            var properties =  _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return new ChallengeResult(provider, properties);
         }
 
 
-        public async Task<IActionResult>
-            ExternalLoginCallback(string returnUrl = null, string remoteError = null)
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalLoginCallback(string returnUrl = null, string remoteError = null)
         {
             returnUrl = returnUrl ?? Url.Content("~/");
 
@@ -184,16 +227,13 @@ namespace MainForm.Controllers
                 return View("Login", loginViewModel);
             }
 
-            // Get the email claim from external login provider (Google, Facebook etc)
             var email = info.Principal.FindFirstValue(ClaimTypes.Email);
             ApplicationUser user = null;
 
             if (email != null)
             {
-                // Find the user
                 user = await UserManager.FindByEmailAsync(email);
 
-                // If email is not confirmed, display login view with validation error
                 if (user != null && !user.EmailConfirmed)
                 {
                     ModelState.AddModelError(string.Empty, "Email not confirmed yet");
@@ -201,8 +241,9 @@ namespace MainForm.Controllers
                 }
             }
 
-            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider,
-                info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(
+                                        info.LoginProvider, info.ProviderKey,
+                                        isPersistent: false, bypassTwoFactor: true);
 
             if (signInResult.Succeeded)
             {
@@ -221,6 +262,20 @@ namespace MainForm.Controllers
                         };
 
                         await UserManager.CreateAsync(user);
+
+                        // After a local user account is created, generate and log the
+                        // email confirmation link
+                        var token = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+
+                        var confirmationLink = Url.Action("ConfirmEmail", "Account",
+                                        new { userId = user.Id, token = token }, Request.Scheme);
+
+                        _logger.Log(LogLevel.Warning, confirmationLink);
+
+                        ViewBag.ErrorTitle = "Registration successful";
+                        ViewBag.ErrorMessage = "Before you can Login, please confirm your " +
+                            "email, by clicking on the confirmation link we have emailed you";
+                        return View("Error");
                     }
 
                     await UserManager.AddLoginAsync(user, info);
@@ -236,7 +291,45 @@ namespace MainForm.Controllers
             }
         }
 
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
 
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword(ForgetPassword model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Find the user by email
+                var user = await UserManager.FindByEmailAsync(model.Email);
+                // If the user is found AND Email is confirmed
+                if (user != null && await UserManager.IsEmailConfirmedAsync(user))
+                {
+                    // Generate the reset password token
+                    var token = await UserManager.GeneratePasswordResetTokenAsync(user);
+
+                    // Build the password reset link
+                    var passwordResetLink = Url.Action("ResetPassword", "Account",
+                        new { email = model.Email, token = token }, Request.Scheme);
+
+                    // Log the password reset link
+                    _logger.Log(LogLevel.Warning, passwordResetLink);
+ 
+                    // Send the user to Forgot Password Confirmation view
+                    return View("ForgotPasswordConfirmation");
+                }
+
+                // To avoid account enumeration and brute force attacks, don't
+                // reveal that the user does not exist or is not confirmed
+                return View("ForgotPasswordConfirmation");
+            }
+
+            return View(model);
+        }
 
 
         [HttpPost]
@@ -277,6 +370,10 @@ namespace MainForm.Controllers
         {
             return View();
         }
+
+
+
+        
 
     }
 }

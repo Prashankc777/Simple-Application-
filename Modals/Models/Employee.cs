@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace Modals.Models
@@ -12,6 +13,9 @@ namespace Modals.Models
         [Display(Name = "First Name")]
         [Required(ErrorMessage = "First name is required")]
         public string FirstName { get; set; }
+
+        [NotMapped]
+        public string EncrypteId { get; set; }
 
 
         [Display(Name = "Last Name")]

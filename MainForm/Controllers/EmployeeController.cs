@@ -5,41 +5,63 @@ using System.Threading.Tasks;
 using Dapper;
 using DataAccessLayers.Interface;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Modals.CustomValidation;
 using Modals.Models;
 
 namespace MainForm.Controllers
 {
     [Authorize]
-    
+
     public class EmployeeController : Controller
     {
         private readonly IEmployeeRepository _employeeRepository;
-     
-       
-        public EmployeeController(IEmployeeRepository employeeRepository)
+        private readonly IDataProtector protector;
+
+
+
+        public EmployeeController(IEmployeeRepository employeeRepository, IDataProtectionProvider dataProtectionProvider, DataProtectionPurposeStrings dataProtectionPurposeStrings)
         {
-            _employeeRepository = employeeRepository;
-          
+            this._employeeRepository = employeeRepository;
+            this.protector = dataProtectionProvider.CreateProtector(dataProtectionPurposeStrings.EmployeeIdRouteValue);
         }
 
-       
 
-        public IActionResult Index()
+
+        [AllowAnonymous]
+        public ViewResult Index()
         {
-            return View(_employeeRepository.GetAllEmpoloyee());
+            var model = _employeeRepository.GetAllEmpoloyee().Select(e =>
+                            {
+                                // Encrypt the ID value and store in EncryptedId property
+                                e.EncrypteId = protector.Protect(e.Id.ToString());
+                                return e;
+                            });
+            return View(model);
+
+
         }
 
         [HttpGet]
-        [Authorize]
-        public ViewResult Edit(int id)
+        [AllowAnonymous]
+        public ViewResult Edit(string id)
+                
         {
-            return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id)) : View();
+            if (ModelState.IsValid)
+            {
+                string decriptId = protector.Unprotect(id);
+                var one = _employeeRepository.GetOneEmployee(Convert.ToInt32(decriptId));
+                View(one);
+            }
+
+
+            return View();
 
         }
-       
+
 
 
         [HttpPost]
@@ -69,9 +91,17 @@ namespace MainForm.Controllers
 
         }
         [HttpGet]
-        public IActionResult Delete(int? id)
+        public IActionResult Delete(string id)
         {
-            return ModelState.IsValid ? View(_employeeRepository.GetOneEmployee(id.Value)) : View();
+            if (ModelState.IsValid)
+            {
+                string decriptId = protector.Unprotect(id);
+                var one = _employeeRepository.GetOneEmployee(Convert.ToInt32(decriptId));
+                View(one);
+            }
+
+
+            return View();
         }
 
         [HttpPost]

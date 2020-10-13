@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Modals.CustomValidation;
 using Modals.Models;
 using SameSiteMode = Microsoft.AspNetCore.Http.SameSiteMode;
 
@@ -101,7 +102,8 @@ namespace MainForm
                 
 
             services.AddSingleton<IEmployeeRepository, EmployeeRepository>();
-          
+            services.AddSingleton<DataProtectionPurposeStrings>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

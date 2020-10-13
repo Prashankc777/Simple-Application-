@@ -29,8 +29,8 @@
                         <td>@item.Data.Email</td>
                         <td>@item.Data.Gender</td>
                         <td>@item.Data.Address</td>
-                        <td> <a asp-controller="Employee" asp-action="Edit" asp-route-id = "@item.Data.Id" class="btn btn-primary">Edit</a> </td>
-                        <td> <a asp-controller="Employee" asp-action="delete" asp-route-id = "@item.Data.Id" class="btn btn-danger">Delete</a> </td>
+                        <td> <a asp-controller="Employee" asp-action="Edit" asp-route-id = "@item.Data.EncrypteId" class="btn btn-primary">Edit</a> </td>
+                        <td> <a asp-controller="Employee" asp-action="delete" asp-route-id = "@item.Data.EncrypteId  " class="btn btn-danger">Delete</a> </td>
                     </tr>
                 }
             }
